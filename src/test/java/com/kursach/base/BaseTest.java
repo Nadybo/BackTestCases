@@ -46,10 +46,11 @@ public class BaseTest {
                 .log().all()
                 .statusCode(code);
     }
-    static ValidatableResponse checkStatusCodePost(Object body, int code) {
+    public static ValidatableResponse checkStatusCodePost(Object body, String url, int code) {
         return given(requestSpecification)
+                .contentType("application/json")
                 .body(body)
-                .post()
+                .post(url)
                 .then()
                 .log().all()
                 .statusCode(code);

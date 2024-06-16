@@ -5,13 +5,10 @@ import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
-import java.util.List;
-
-import static io.restassured.RestAssured.given;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertTrue;
+import io.restassured.module.jsv.JsonSchemaValidator;
 
 public class APITests extends BaseTest {
 
@@ -19,6 +16,12 @@ public class APITests extends BaseTest {
     public static void setUo(){
         BaseTest.setUp();
         requestSpecification.basePath("/users");
+    }
+
+    @Test
+    public void checkListUsersValidate() {
+        sendGetRequest(200)
+                .assertThat().body(JsonSchemaValidator.matchesJsonSchemaInClasspath("UsersSchema.json"));
     }
 
     @Test
@@ -36,14 +39,8 @@ public class APITests extends BaseTest {
 
     @Test
     public void testUserFromResponse() {
-        UserData userData = given()
-                .when()
-                .get("https://reqres.in/api/users/2")
-                .then()
-                .log().all()
-                .statusCode(200)
+        UserData userData = checkStatusCodeGet("https://reqres.in/api/users/2", 200)
                 .extract().body().jsonPath().getObject("data", UserData.class);
-
         assertThat("Идентификатор пользователя должен быть равен 2", userData.getId(), is(2));
         assertThat("Адрес электронной почты пользователя должен быть janet.weaver@reqres.in", userData.getEmail(), is("janet.weaver@reqres.in"));
         assertThat("Имя пользователя должно быть Джанет", userData.getFirst_name(), is("Janet"));
@@ -53,33 +50,21 @@ public class APITests extends BaseTest {
 
     @Test
     public void userNotFound() {
-        String responseBody =
-                given()
-                        .when()
-                        .get("https://reqres.in/api/users/22")
-                        .then()
-                        .log().all()
-                        .statusCode(404)
+        String responseBody = checkStatusCodeGet("https://reqres.in/api/users/22", 404)
                         .extract()
                         .asString();
-
         assertEquals("{}", responseBody, "Expected response body to be empty JSON object {}");
     }
 
     @Test
     public void createUser(){
         People people = new People("aslbek", "student");
-        PeopleCreater peopleCreater = given()
-                .contentType("application/json")
-                .body(people)
-                .when()
-                .post("https://reqres.in/api/users")
-                .then()
-                .log().all()
-                .statusCode(201)
+        PeopleCreater peopleCreater = checkStatusCodePost(people,"https://reqres.in/api/users",201)
                 .extract()
                 .as(PeopleCreater.class);
         assertEquals(peopleCreater.getName(),people.getName());
         assertEquals(peopleCreater.getJob(), people.getJob());
     }
+
+
 }
